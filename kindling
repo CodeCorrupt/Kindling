@@ -1,0 +1,44 @@
+#!/bin/bash
+
+usage="
+$(basename "$0") (start|stop|logs) -- Kindling is a fully automated media server solution including
+
+Plex: The media server
+Sadarr: Tool for tracking and finding downloads for TV shows
+Ronarr: Tool for finding downloads for Movies
+Sabnzbd: A binary newsreader to download what Sonarr/Radarr find
+Transmission: A torrent download client
+Jackett: A meta indexer for a wide range of torrent providers
+
+Options:
+    start - Start the media stack
+    stop  - Stop the media stack
+    logs  - print the logs
+"
+
+# Check both Docker and Docekr Compose are installed
+if [ -z "$(docker --version)" ]; then
+  printf "Docker is required to run this stack\n" >&2
+  printf "Please see https://www.docker.com/\n" >&2
+  exit 1
+fi
+if [ -z "$(docker-compose --version)" ]; then
+  printf "Docker Compose is required to run this stack\n" >&2
+  printf "Please see https://docs.docker.com/compose/overview/\n" >&2
+  exit 1
+fi
+
+case "$1" in
+  start) script="start"
+     ;;
+  stop ) script="stop"
+     ;;
+  logs ) script="logs"
+     ;;
+ *     ) printf "Missing argument" >&2
+     echo "$usage" >&2
+     exit 1
+     ;;
+esac
+
+./kindling-$script ${@:2}

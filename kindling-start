@@ -1,0 +1,57 @@
+#!/bin/bash
+
+usage="
+$(basename "$0") [-h] [-c <plex claim>] -- Starts up the media server stack. This stack includes...
+
+Plex: The media server
+Sadarr: Tool for tracking and finding downloads for TV shows
+Ronarr: Tool for finding downloads for Movies
+Sabnzbd: A binary newsreader to download what Sonarr/Radarr find
+Transmission: A torrent download client
+Jackett: A meta indexer for a wide range of torrent providers
+
+Options:
+    -h  Show this help text
+    -c  Your plex claim (Can be found at https://www.plex.tv/claim/)
+"
+
+# Check both Docker and Docekr Compose are installed
+if [ -z "$(docker --version)" ]; then
+  printf "Docker is required to run this stack\n" >&2
+  printf "Please see https://www.docker.com/\n" >&2
+  exit 1
+fi
+if [ -z "$(docker-compose --version)" ]; then
+  printf "Docker Compose is required to run this stack\n" >&2
+  printf "Please see https://docs.docker.com/compose/overview/\n" >&2
+  exit 1
+fi
+
+# Parse options
+while getopts ':hc:' option; do
+  case "$option" in
+    h) echo "$usage"
+       exit
+       ;;
+    c) claim=$OPTARG
+       ;;
+    :) printf "missing argument for -%s\n" "$OPTARG" >&2
+       echo "$usage" >&2
+       exit 1
+       ;;
+   \?) printf "illegal option: -%s\n" "$OPTARG" >&2
+       echo "$usage" >&2
+       exit 1
+       ;;
+  esac
+done
+
+# Check the claim was given
+if [ -z "$claim" ]; then
+  printf "Missing required flag: -c <plex claim>\n" >&2
+  echo "$usage" >&2
+  exit 1
+fi
+
+cat docker-compose.yml | grep "\- \.\/" | cut -d '-' -f2 | cut -d ' ' -f2 | xargs mkdir -p
+USER_ID=$(id -u) GROUP_ID=$(id -g) PLEX_CLAIM=$claim docker-compose -f docker-compose.yml up -d

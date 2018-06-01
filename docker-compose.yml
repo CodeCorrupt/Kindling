@@ -1,0 +1,142 @@
+version: '3'
+services:
+  plex:
+    image: plexinc/pms-docker:plexpass
+    container_name: plex
+    volumes:
+      - ./plex/config:/config
+      - ./plex/transcode:/transcode
+      - ./plex/data:/data
+    environment:
+      - TZ="America/New_York"
+      - PLEX_CLAIM=$PLEX_CLAIM
+      - PLEX_UID=$USER_ID
+      - PLEX_GID=$GROUP_ID
+    networks:
+      - plex
+    ports:
+      - 32400:32400/tcp
+      - 3005:3005/tcp
+      - 8324:8324/tcp
+      - 32469:32469/tcp
+      - 1900:1900/udp
+      - 32410:32410/udp
+      - 32412:32412/udp
+      - 32413:32413/udp
+      - 32414:32414/udp
+
+
+  sonarr:
+    image: linuxserver/sonarr:latest
+    container_name: sonarr
+    volumes:
+      - ./plex/data:/plex-data
+
+      - /etc/localtime:/etc/localtime:ro
+      - ./sonarr/config:/config
+      - ./sonarr/tv:/tv
+      - ./sonarr/downloads:/downloads
+
+      - ./sabnzbd/datadir:/datadir
+      - ./sabnzbd/media:/media
+
+      - ./transmission/downloads:/downloads
+    environment:
+      - TZ="America/New_York"
+      - PUID=$USER_ID
+      - PGID=$GROUP_ID
+    networks:
+      - plex
+      - jackett
+      - sabnzbd
+      - transmission
+    ports:
+      - 8989:8989
+
+
+  radarr:
+    image: linuxserver/radarr
+    container_name: radarr
+    volumes:
+      - ./plex/data:/plex-data
+
+      - /etc/localtime:/etc/localtime:ro
+      - ./radarr/config:/config
+      - ./radarr/movies:/movies
+      - ./radarr/downloads:/downloads
+
+      - ./sabnzbd/datadir:/datadir
+      - ./sabnzbd/media:/media
+
+      - ./transmission/downloads:/downloads
+    environment:
+      - TZ="America/New_York"
+      - PUID=$USER_ID
+      - PGID=$GROUP_ID
+    networks:
+      - plex
+      - jackett
+      - sabnzbd
+      - transmission
+    ports:
+      - 7878:7878
+
+
+  jackett:
+    image: linuxserver/jackett
+    container_name: jackett
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./jackett/config:/config
+      - ./jackett/downloads:/downloads
+    environment:
+      - TZ="America/New_York"
+      - PUID=$USER_ID
+      - PGID=$GROUP_ID
+    networks:
+      - jackett
+    ports:
+      - 9117:9117
+
+
+  sabnzbd:
+    image: linuxserver/sabnzbd
+    container_name: sabnzbd
+    volumes:
+      - ./sabnzbd/config:/config
+      - ./sabnzbd/downloads:/downloads
+      - ./sabnzbd/incomplete-downloads:/incomplete-downloads
+    environment:
+      - TZ="America/New_York"
+      - PUID=$USER_ID
+      - PGID=$GROUP_ID
+    networks:
+      - sabnzbd
+    ports:
+      - 8080:8080
+      - 9090:9090
+
+
+  transmission:
+    image: linuxserver/transmission
+    container_name: transmission
+    volumes:
+      - ./transmission/config:/config
+      - ./transmission/downloads:/downloads
+      - ./transmission/watch:/watch
+    environment:
+      - TZ="America/New_York"
+      - PUID=$USER_ID
+      - PGID=$GROUP_ID
+    networks:
+      - transmission
+    ports:
+      - 9091:9091
+      - 51413:51413/udp
+
+networks:
+  plex:
+  jackett:
+  sabnzbd:
+  transmission:
+

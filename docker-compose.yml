@@ -1,29 +1,27 @@
-version: '3'
+version: "3.4"
 services:
-  # https://github.com/plexinc/pms-docker
   plex:
-    image: plexinc/pms-docker:latest
+    image: lscr.io/linuxserver/plex:latest
     container_name: plex
     environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - VERSION=docker
       - TZ=${TIMEZONE}
       - PLEX_CLAIM=${PLEX_CLAIM}
-      - PLEX_UID=${PUID}
-      - PLEX_GID=${PGID}
+      #- NVIDIA_VISIBLE_DEVICES=all
+      #- NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
     volumes:
-      - ${BASE_DIR}/config/plex-config:/config
-      - ${BASE_DIR}/data/transcode:/transcode
-      - ${BASE_DIR}/data/media:/data
-    ports:
-      - 32400:32400/tcp
-      - 8324:8324/tcp
-      - 32469:32469/tcp
-      - 1900:1900/udp
-      - 32410:32410/udp
-      - 32412:32412/udp
-      - 32413:32413/udp
-      - 32414:32414/udp
-    # network_mode: host
+      - ${BASE_CONFIG_DIR}/plex-config:/config
+      - ${BASE_MEDIA_DIR}/transcode:/transcode
+      - ${BASE_MEDIA_DIR}/media:/data
+    network_mode: host
     restart: unless-stopped
+    #deploy:
+    #  resources:
+    #    reservations:
+    #      devices:
+    #        - capabilities: [gpu]
 
   # https://docs.linuxserver.io/images/docker-sabnzbd
   sabnzbd:
@@ -35,8 +33,8 @@ services:
       # - UMASK=002
       - TZ=${TIMEZONE}
     volumes:
-      - ${BASE_DIR}/config/sabnzbd-config:/config
-      - ${BASE_DIR}/data/usenet:/data/usenet
+      - ${BASE_CONFIG_DIR}/sabnzbd-config:/config
+      - ${BASE_MEDIA_DIR}/usenet:/data/usenet
     ports:
       - "8080:8080"
     # network_mode: host
@@ -53,8 +51,8 @@ services:
       - TZ=${TIMEZONE}
       - WEBUI_PORT=8081
     volumes:
-      - ${BASE_DIR}/config/qbittorrent-config:/config
-      - ${BASE_DIR}/data/torrents:/data/torrents
+      - ${BASE_CONFIG_DIR}/qbittorrent-config:/config
+      - ${BASE_MEDIA_DIR}/torrents:/data/torrents
     ports:
       - "8081:8081"
       - "6881:6881"
@@ -72,8 +70,8 @@ services:
       # - UMASK=002
       - TZ=${TIMEZONE}
     volumes:
-      - ${BASE_DIR}/config/sonarr-config:/config
-      - ${BASE_DIR}/data:/data
+      - ${BASE_CONFIG_DIR}/sonarr-config:/config
+      - ${BASE_MEDIA_DIR}:/data
     ports:
       - "8989:8989"
     # network_mode: host
@@ -89,8 +87,8 @@ services:
       # - UMASK=002
       - TZ=${TIMEZONE}
     volumes:
-      - ${BASE_DIR}/config/radarr-config:/config
-      - ${BASE_DIR}/data:/data
+      - ${BASE_CONFIG_DIR}/radarr-config:/config
+      - ${BASE_MEDIA_DIR}:/data
     ports:
       - "7878:7878"
     # network_mode: host
@@ -106,11 +104,26 @@ services:
       # - UMASK=002
       - TZ=${TIMEZONE}
     volumes:
-      - ${BASE_DIR}/config/lidarr-config:/config
-      - ${BASE_DIR}/data:/data
+      - ${BASE_CONFIG_DIR}/lidarr-config:/config
+      - ${BASE_MEDIA_DIR}:/data
     ports:
       - "8686:8686"
     # network_mode: host
+    restart: unless-stopped
+
+  # https://docs.linuxserver.io/images/docker-bazarr
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${BASE_CONFIG_DIR}/bazarr-config:/config
+      - ${BASE_MEDIA_DIR}:/data
+    ports:
+      - "6767:6767"
     restart: unless-stopped
   
   # https://docs.linuxserver.io/images/docker-prowlarr
@@ -123,7 +136,7 @@ services:
       # - UMASK=002
       - TZ=${TIMEZONE}
     volumes:
-      - ${BASE_DIR}/config/prowlarr-config:/config
+      - ${BASE_CONFIG_DIR}/prowlarr-config:/config
     ports:
       - "9696:9696"
     # network_mode: host
@@ -139,8 +152,82 @@ services:
       # - UMASK=002
       - TZ=${TIMEZONE}
     volumes:
-      - ${BASE_DIR}/config/overseerr-config:/app/config
+      - ${BASE_CONFIG_DIR}/overseerr-config:/app/config
     ports:
       - "5055:5055"
     # network_mode: host
     restart: unless-stopped
+
+
+  tdarr:
+    container_name: tdarr
+    image: ghcr.io/haveagitgat/tdarr:latest
+    restart: unless-stopped
+    network_mode: bridge
+    ports:
+      - 8265:8265 # webUI port
+      - 8266:8266 # server port
+    environment:
+      - TZ=Europe/London
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK_SET=002
+      - serverIP=0.0.0.0
+      - serverPort=8266
+      - webUIPort=8265
+      - internalNode=true
+      - inContainer=true
+      - ffmpegVersion=6
+      - nodeName=MyInternalNode
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - ${BASE_CONFIG_DIR}/tdarr/server:/app/server
+      - ${BASE_CONFIG_DIR}/tdarr/configs:/app/configs
+      - ${BASE_CONFIG_DIR}/tdarr/logs:/app/logs
+      - ${BASE_MEDIA_DIR}/media:/media
+      - ${BASE_MEDIA_DIR}/transcode/tdarr:/temp
+
+    devices:
+      - /dev/dri:/dev/dri
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#          - driver: nvidia
+#            count: all
+#            capabilities: [gpu]
+
+#  tdarr-node:
+#    container_name: tdarr-node
+#    image: ghcr.io/haveagitgat/tdarr_node:latest
+#    restart: unless-stopped
+#    network_mode: service:tdarr
+#    environment:
+#      - TZ=Europe/London
+#      - PUID=${PUID}
+#      - PGID=${PGID}
+#      - UMASK_SET=002
+#      - nodeName=MyExternalNode
+#      - serverIP=0.0.0.0
+#      - serverPort=8266
+#      - inContainer=true
+#      - ffmpegVersion=6
+#      - NVIDIA_DRIVER_CAPABILITIES=all
+#      - NVIDIA_VISIBLE_DEVICES=all
+#
+#    volumes:
+#      - ${BASE_CONFIG_DIR}/tdarr/configs:/app/configs
+#      - ${BASE_CONFIG_DIR}/tdarr/logs:/app/logs
+#      - ${BASE_MEDIA_DIR}/media:/media
+#      - ${BASE_MEDIA_DIR}/transcode/tdarr:/temp
+#
+#    devices:
+#      - /dev/dri:/dev/dri
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#          - driver: nvidia
+#            count: all
+#            capabilities: [gpu]

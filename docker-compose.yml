@@ -39,7 +39,7 @@ services:
       - "8080:8080"
     # network_mode: host
     restart: unless-stopped
-  
+
   # https://docs.linuxserver.io/images/docker-qbittorrent/
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -125,7 +125,7 @@ services:
     ports:
       - "6767:6767"
     restart: unless-stopped
-  
+
   # https://docs.linuxserver.io/images/docker-prowlarr
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
@@ -157,7 +157,6 @@ services:
       - "5055:5055"
     # network_mode: host
     restart: unless-stopped
-
 
   tdarr:
     container_name: tdarr

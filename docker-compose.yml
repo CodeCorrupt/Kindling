@@ -15,7 +15,12 @@ services:
       - ${BASE_CONFIG_DIR}/plex-config:/config
       - ${BASE_MEDIA_DIR}/transcode:/transcode
       - ${BASE_MEDIA_DIR}/media:/data
-    network_mode: host
+    ports:
+      - "32400:32400" # Main web port
+      - "32410:32410" # current GDM network discovery
+      - "32412:32412" # current GDM network discovery
+      - "32413:32413" # current GDM network discovery
+      - "32414:32414" # current GDM network discovery
     restart: unless-stopped
     #deploy:
     #  resources:

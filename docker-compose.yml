@@ -1,4 +1,3 @@
-version: "3.4"
 services:
   plex:
     image: lscr.io/linuxserver/plex:latest
@@ -9,11 +8,13 @@ services:
       - VERSION=docker
       - TZ=${TIMEZONE}
       - PLEX_CLAIM=${PLEX_CLAIM}
-      #- NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_VISIBLE_DEVICES=all
       #- NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - LD_LIBRARY_PATH=/usr/local/nvidia/lib/libcuda.so.1:$LD_LIBRARY_PATH
     volumes:
       - ${BASE_CONFIG_DIR}/plex-config:/config
-      - ${BASE_MEDIA_DIR}/transcode:/transcode
+      - ${BASE_MEDIA_DIR}/transcode/plex:/transcode
       - ${BASE_MEDIA_DIR}/media:/data
     ports:
       - "32400:32400" # Main web port
@@ -22,11 +23,15 @@ services:
       - "32413:32413" # current GDM network discovery
       - "32414:32414" # current GDM network discovery
     restart: unless-stopped
-    #deploy:
-    #  resources:
-    #    reservations:
-    #      devices:
-    #        - capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: cdi
+              device_ids:
+                - nvidia.com/gpu=all
+              capabilities:
+                - gpu
 
   # https://docs.linuxserver.io/images/docker-sabnzbd
   sabnzbd:
